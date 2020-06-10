@@ -1,0 +1,20 @@
+Bootstrap: library
+From: ubuntu:20.04
+Stage: build
+
+%post
+    # add universe repos for pip
+    echo "deb http://us.archive.ubuntu.com/ubuntu focal universe" >> /etc/apt/sources.list
+    apt-get update
+    apt-get install -y python3-pip
+
+    pip3 install treep
+
+    SETUP_TREEPCD=$(python3 -c "import treep; treep.print_setup_treepcd_path()")
+    echo "export SETUP_TREEPCD=${SETUP_TREEPCD}" >> $SINGULARITY_ENVIRONMENT
+
+%runscript
+    exec treep "$@"
+
+%apprun cd
+    bash -c "source ${SETUP_TREEPCD}; treepcd $@"
