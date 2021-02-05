@@ -4,18 +4,17 @@ on:
         branches:
             - master
 jobs:
-
     build:
         name: Build
         runs-on: ubuntu-20.04
         container:
             image: quay.io/singularity/singularity:v3.7.1
             options: --privileged
-            steps:
-                - name: Check out code for the container build
-                  uses: actions/checkout@v2
+        steps:
+            - name: Check out code for the container build
+              uses: actions/checkout@v2
 
-                - name: Build Containers
-                  run: |
-                      sudo -E singularity build treep.sif treep.def
-                      sudo -E singularity build black.sif black.def
+            - name: Build Containers
+              run: |
+                  sudo -E singularity build treep.sif treep.def
+                  sudo -E singularity build black.sif black.def
