@@ -1,0 +1,35 @@
+name: Build Singularity images for release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build containers for release
+    runs-on: ubuntu-20.04
+    container:
+      image: quay.io/singularity/singularity:v3.7.1
+      options: --privileged
+    steps:
+      - name: Check out code for the container build
+        uses: actions/checkout@v2
+
+      - name: Build Treep Container
+        run: sudo -E singularity build treep.sif treep.def
+
+      - name: Build Black Container
+        run: sudo -E singularity build black.sif black.def
+
+      - name: Build VLC Container
+        run: sudo -E singularity build vlc.sif vlc.def
+
+      - name: Upload images to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file_glob: true
+          file: "*.sif"
+          tag: ${{ github.ref }}
+          overwrite: true
