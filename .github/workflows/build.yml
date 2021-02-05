@@ -1,8 +1,10 @@
-name: Singularity Build (docker)
+name: Singularity Build (via docker)
 on:
     push:
         branches:
             - master
+        paths:
+            - "*.def"
 jobs:
     build:
         name: Build
@@ -14,7 +16,18 @@ jobs:
             - name: Check out code for the container build
               uses: actions/checkout@v2
 
-            - name: Build Containers
-              run: |
-                  sudo -E singularity build treep.sif treep.def
-                  sudo -E singularity build black.sif black.def
+            - name: Build Treep Container
+              continue-on-error: true
+              run: sudo -E singularity build treep.sif treep.def
+            - uses: actions/upload-artifact@v2
+              with:
+                  name: treep
+                  path: treep.sif
+
+            - name: Build Black Container
+              continue-on-error: true
+              run: sudo -E singularity build black.sif black.def
+            - uses: actions/upload-artifact@v2
+              with:
+                  name: black
+                  path: black.sif
