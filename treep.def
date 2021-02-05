@@ -10,11 +10,5 @@ Stage: build
 
     pip3 install treep
 
-    SETUP_TREEPCD=$(python3 -c "import treep; treep.print_setup_treepcd_path()")
-    echo "export SETUP_TREEPCD=${SETUP_TREEPCD}" >> $SINGULARITY_ENVIRONMENT
-
 %runscript
     exec treep "$@"
-
-%apprun cd
-    bash -c "source ${SETUP_TREEPCD}; treepcd $@"
