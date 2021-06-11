@@ -1,0 +1,51 @@
+Bootstrap: library
+From: ubuntu:20.04
+Stage: build
+
+%post
+    echo "deb http://us.archive.ubuntu.com/ubuntu focal universe" >> /etc/apt/sources.list
+    apt-get update
+    apt-get -y install wget git python3-pip
+
+    # get the nightly build
+    wget https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
+    chmod a+x nvim.appimage
+
+    # extract the appimage as there is no FUSE in the container
+    ./nvim.appimage --appimage-extract
+
+    # move to /opt and add a symlink in /usr/local/bin (so that it is in the
+    # PATH)
+    mv ./squashfs-root /opt/nvim
+    ln -s /opt/nvim/usr/bin/nvim /usr/local/bin
+
+    mkdir /config /data
+    export XDG_CONFIG_HOME=/config
+    export XDG_DATA_HOME=/data
+
+    # get my config
+    git clone https://github.com/luator/vim-config.git /config/nvim
+
+    # create a temporary vim config which contains only the part until the
+    # plugins are defined (so does not contain the configuration of the plugins
+    # which are not yet installed and which causes a failure here for some
+    # reason)
+    cat /config/nvim/init.vim | sed -n '1,/call plug#end()/p' > /tmp/init.vim
+
+    #nvim +PlugInstall +qall
+    nvim -u /tmp/init.vim +PlugInstall +qall
+
+    # make sure config and plugin files are accessible by everyone
+    chmod -R a+rx /config
+    chmod -R a+rx /data
+
+    # install language server stuff
+    python3 -m pip install python-lsp-server python-lsp-black mypy-ls
+
+%environment
+    export XDG_CONFIG_HOME=/config
+    export XDG_DATA_HOME=/data
+
+%runscript
+    # can't write shada file in the read-only container, so disable it (-i NONE)
+    nvim -i NONE "$@"

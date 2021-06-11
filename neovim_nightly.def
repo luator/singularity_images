@@ -1,0 +1,83 @@
+Bootstrap: docker
+From: alpine
+
+%post
+    #
+    # INSTALL NEOVIM
+    #
+
+    # install neovim build requirements
+    apk --no-cache add build-base cmake automake autoconf libtool pkgconf \
+        coreutils curl unzip gettext-tiny-dev
+
+    # download source of last nightly build and build it
+    wget https://github.com/neovim/neovim/archive/refs/tags/nightly.tar.gz
+    tar -xzf nightly.tar.gz
+    cd neovim-nightly
+    make CMAKE_BUILD_TYPE=RelWithDebInfo
+    make install
+    # cleanup
+    cd ..
+    rm -rf neovim-nightly nightly.tar.gz
+
+
+    #
+    # SETUP CONFIGURATION
+    #
+
+    # additional requirements
+    apk --no-cache add git python3 python3-dev py3-pip py3-wheel
+
+    # setup config/data directory inside the container
+    mkdir /config /data
+    export XDG_CONFIG_HOME=/config
+    export XDG_DATA_HOME=/data
+
+    # get my config
+    git clone https://github.com/luator/vim-config.git /config/nvim
+
+    # create a temporary vim config which contains only the part until the
+    # plugins are defined (so does not contain the configuration of the plugins
+    # which are not yet installed and which causes a failure here for some
+    # reason)
+    cat /config/nvim/init.vim | sed -n '1,/call plug#end()/p' > /tmp/init.vim
+    nvim -u /tmp/init.vim +PlugInstall +qall
+
+    # make sure config and plugin files are accessible by everyone
+    chmod -R a+rx /config
+    chmod -R a+rx /data
+
+    # install language server stuff
+    python3 -m pip install python-lsp-server python-lsp-black mypy-ls
+
+    ### Specific container config
+    # store swp files next to edited file, instead of in XDG_DATA_HOME (the
+    # latter is not writable in the container)
+    echo "set directory=." >> /config/nvim/init.vim
+
+    #
+    # CLEANUP
+    #
+
+    # Remove pure build dependencies to reduce image size
+    # Note that build-base and py3-pip are needed at runtime
+    apk del cmake
+    apk del automake
+    apk del autoconf
+    apk del libtool
+    apk del pkgconf
+    apk del coreutils
+    apk del curl
+    apk del unzip
+    apk del gettext-tiny-dev
+    apk del python3-dev
+    apk del py3-wheel
+
+%environment
+    export XDG_CONFIG_HOME=/config
+    export XDG_DATA_HOME=/data
+
+%runscript
+    # can't write shada file in the read-only container, so disable it (-i NONE)
+    nvim -i NONE "$@"
+
