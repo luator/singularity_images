@@ -1,14 +1,9 @@
-Bootstrap: library
-From: ubuntu:20.04
-Stage: build
+Bootstrap: docker
+From: alpine
 
 %post
-    # add universe repos for pip
-    echo "deb http://us.archive.ubuntu.com/ubuntu focal universe" >> /etc/apt/sources.list
-    apt-get update
-    apt-get install -y python3-pip git
-
-    pip3 install treep
+    apk --no-cache add git openssh-client python3 py3-pip
+    python3 -m pip install treep
 
 %runscript
     exec treep "$@"
