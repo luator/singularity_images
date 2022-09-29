@@ -1,0 +1,7 @@
+Bootstrap: docker
+From: python:3.8-slim
+
+%post
+    # plotext.from_matplotlib() does not work with matplotlib 3.6, so use
+    # previous version
+    python3 -m pip install numpy matplotlib==3.5.3 plotext
